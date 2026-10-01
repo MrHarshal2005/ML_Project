@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prediction Result</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+
+        <!-- 1. PREDICTION -->
+        <div class="result-card {% if is_high %}high-income{% else %}low-income{% endif %}">
+            <h2>Prediction</h2>
+            <div class="prediction">{{ prediction }}</div>
+
+            <div class="confidence">Confidence: {{ confidence }}%</div>
+            <div class="progress-bar">
+                <div class="progress-fill" style="width: {{ confidence }}%"></div>
+            </div>
+
+        </div>
+
+        <!-- 2. FEATURES SELECTED -->
+        <div class="section">
+            <h2>Features Selected by RFE</h2>
+            <p class="note">
+                RFE selected {{ selected_features|length }} of {{ comparison[0].base_features }}
+                features. Feature count and forest settings were chosen by stratified
+                cross-validation for accuracy.
+            </p>
+            <div class="feature-tags">
+                {% for feat in selected_features %}
+                <span class="tag">{{ feat }}</span>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- 3. IMPACT -->
+        <div class="section">
+            <h2>Feature Selection Impact</h2>
+            <p class="note">Full-feature baseline vs. RFE({{ best_k }}) selected model</p>
+
+            {% for c in comparison %}
+            <div class="comparison-card">
+                <h3>{{ c.name }}</h3>
+                <table class="comparison-table">
+                    <thead>
+                        <tr>
+                            <th>Metric</th>
+                            <th>All Features</th>
+                            <th>RFE({{ best_k }})</th>
+                            <th>Change</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td># Features</td>
+                            <td>{{ c.base_features }}</td>
+                            <td>{{ c.opt_features }}</td>
+                            <td class="improve">&darr; {{ c.base_features - c.opt_features }}</td>
+                        </tr>
+                        <tr>
+                            <td>Train time (s)</td>
+                            <td>{{ c.base_time }}</td>
+                            <td>{{ c.opt_time }}</td>
+                            <td class="{% if c.time_saved > 0 %}improve{% endif %}">
+                                {% if c.time_saved > 0 %}&darr; {{ c.time_saved }}%{% else %}-{% endif %}
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>F1-Score</td>
+                            <td>{{ c.base_f1 }}</td>
+                            <td>{{ c.opt_f1 }}</td>
+                            <td class="{% if c.f1_delta >= 0 %}improve{% else %}decline{% endif %}">
+                                {{ "%+.4f"|format(c.f1_delta) }}
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>AUC-ROC</td>
+                            <td>{{ c.base_auc }}</td>
+                            <td>{{ c.opt_auc }}</td>
+                            <td class="{% if c.auc_delta >= 0 %}improve{% else %}decline{% endif %}">
+                                {{ "%+.4f"|format(c.auc_delta) }}
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>Accuracy</td>
+                            <td>{{ c.base_acc }}</td>
+                            <td>{{ c.opt_acc }}</td>
+                            <td class="{% if c.opt_acc >= c.base_acc %}improve{% else %}decline{% endif %}">
+                                {{ "%+.4f"|format(c.opt_acc - c.base_acc) }}
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            {% endfor %}
+        </div>
+
+        <a href="/" class="back-link">&larr; Predict again</a>
+    </div>
+</body>
+</html>
